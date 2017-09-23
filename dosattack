@@ -19,7 +19,7 @@ extractionmenu
   	elif [ "$opt" = "View Readme" ]; then
 showreadme
 	else
-#if no valid option is chosen, chastise the user
+
 	echo "That's not a valid option! Hit Return to show main menu"
 	fi
 done
