@@ -12,7 +12,7 @@ mainmenu()
 mainmenu=("Recon" "DOS" "Extraction" "View Readme" "Quit")
 select opt in "${mainmenu[@]}"; do
 	if [ "$opt" = "Quit" ]; then
-	echo "Quitting...Thank you for using pentmenu!" && sleep 1 && clear
+	echo "Quitting...Thank you for using dosattack tool!" && sleep 1 && clear
 	exit 0
 	elif [ "$opt" = "Recon" ]; then
 reconmenu
