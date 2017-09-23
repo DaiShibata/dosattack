@@ -1,14 +1,10 @@
 #!/bin/bash
-#set the prompt to show you are in pentmenu and not standard shell
+
 PS3="dossatack>"
 
-##MAINMENU##
-##################
-##START MAINMENU##
 mainmenu()
 {
-#build a main menu using bash select
-#from here, the various sub menus can be selected and from them, modules can be run
+
 mainmenu=("Recon" "DOS" "Extraction" "View Readme" "Quit")
 select opt in "${mainmenu[@]}"; do
 	if [ "$opt" = "Quit" ]; then
@@ -28,165 +24,130 @@ showreadme
 	fi
 done
 }
-##END MAINMENU##
-################
-##/MAINMENU##
 
-
-##RECON##
-###################
-##START RECONMENU##
 reconmenu()
 {
-#build a menu for the recon modules using bash select
 		reconmenu=("Show IP" "DNS Recon" "Ping Sweep" "Quick Scan" "Detailed Scan" "UDP Scan" "Check Server Uptime" "IPsec Scan" "Go back")
 	select reconopt in "${reconmenu[@]}"; do
-#show external IP & interface IP(s)
+
 	if [ "$reconopt" = "Show IP" ]; then
 		showip
-#DNS Recon
+
     elif [ "$reconopt" = "DNS Recon" ]; then
         dnsrecon
-#Ping Sweep
+
     elif [ "$reconopt" = "Ping Sweep" ]; then
         pingsweep
-#Recon Network
+
     elif [ "$reconopt" = "Quick Scan" ]; then
         quickscan
-#Stealth Scan
+
     elif [ "$reconopt" = "Detailed Scan" ]; then
         detailedscan
-#UDP Scan
+
 	elif [ "$reconopt" = "UDP Scan" ]; then
 		udpscan
-#Check uptime of server
+
     elif [ "$reconopt" = "Check Server Uptime" ]; then
         checkuptime
-#IPsec Scan
+	
 	elif [ "$reconopt" = "IPsec Scan" ]; then
 		ipsecscan
-#Go back
+
 	elif [ "$reconopt" = "Go back" ]; then
 		mainmenu
-## Default if no menu option selected is to return an error
+
 	else
   		echo  "That's not a valid option! Hit Return to show menu"
 	fi
 	done
 }
-##END RECONMENU##
-#################
 
-################
-##START SHOWIP##
 showip()
 {		echo "External IP lookup uses curl..."
 		echo "External IP is detected as:"
-#use curl to lookup external IP
+
 		curl http://canihazip.com/s/
 		echo ""
 		echo ""
-#show interface IP's
+
 		echo "Interface IP's are:"
 		ip a|grep inet
-#if ip a command fails revert to ifconfig
+
 	if ! [[ $? = 0 ]]; then
 		ifconfig|grep inet
 	fi
 		echo ""
 }
-##END SHOWIP##
-##############
 
-##################
-##START DNSRECON##
 dnsrecon()
 { echo "This module performs passive recon via forward/reverse name lookups for the target (as appropriate) and performs a whois lookup"
 	echo "Enter target:"
-#need a target IP/hostname to check
+
 	read -i $TARGET -e TARGET
 host $TARGET
-#if host command doesnt work try nslookup instead
+
 if ! [[ $? = 0 ]]; then
 nslookup $TARGET
 fi
-#run a whois lookup on the target
+
 sleep 1 && whois -H $TARGET
 if ! [[ $? = 0 ]]; then
-#if whois fails, do a curl lookup to ipinfo.io
+
 sleep 1 && curl ipinfo.io/$TARGET
 fi
 }
-##END DNSRECON##
-################
 
-###################
-##START PINGSWEEP##
 pingsweep()
 { echo "This module performs a simple ICMP echo 'ping' sweep"
 	echo "Please enter the target (e.g. 192.168.1.0/24):"
-#need to know the subnet to scan for live hosts using pings
+
 	read -i $TARGET -e TARGET
-#launch ping sweep using nmap
-#this could be done with ping command, but that is extremely difficult to code in bash for unusual subnets so we use nmap instead
+
 sudo nmap -sP -PE $TARGET --reason
 }
-##END PINGSWEEP##
-#################
 
-######################
-##START QUICKSCAN##
 quickscan()
 { echo "This module conducts a scan using nmap"
 echo "It is designed to scan an entire network for common open ports"
 echo "It will perform a TCP SYN port scan of the 1000 most common ports"
 echo "Depending on the target, the scan might take a long time to finish"
 echo "Please enter the target host/IP/subnet:"
-#we need to know where to scan.  Whilst a hostname is possible, this module is designed to scan a subnet range
+
 read -i $TARGET -e TARGET
 echo "Enter the speed of scan (0 means very slow and 5 means fast).
 Slower scans are more subtle, but faster means less waiting around.
 Default is 3:"
-#How fast should we scan the target?
-#Faster speed is more likely to be detected by IDS, but is less waiting around
+
 read -i $SPEED -e SPEED
 : ${SPEED:=3}
-#launch the scan
+
 sudo nmap -Pn -sS -T $SPEED $TARGET --reason
 }
-## END QUICKSCAN##
-#####################
 
-#####################
-##START DETAILEDSCAN##
 detailedscan()
 { echo "This module performs a scan using nmap"
 echo "It is designed to perform a detailed scan of a specific host but can be used against an entire network"
 echo "This scans ALL ports on the target. It also attempts OS detection and gathers service information"
 echo "This scan might take a very long time to finish, please be patient"
 echo "Enter the hostname/IP/subnet to scan:"
-#need a target hostname/IP
+
 read -i $TARGET -e TARGET
 echo "Enter the speed of scan (0 means very slow and 5 means fast).
 Slower scans are more subtle, but faster means less waiting around.
 Default is 3:"
-#How fast should we scan the target?
-#Faster speed is more likely to be detected by IDS, but is less waiting around
+
 read -i $SPEED -e SPEED
 : ${SPEED:=3}
-#scan using nmap.  Note the change in user-agent from the default nmap value to help avoid detection
+
 sudo nmap -script-args http.useragent="Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko" -Pn -p 1-65535 -sV -sC -A -O -T $SPEED $TARGET --reason
 }
-##END DETAILEDSCAN##
-###################
 
-#################
-##START UDPSCAN##
 udpscan()
 { echo "This module lets you scan a host/network for open UDP ports"
 echo "It scans ALL ports on the target system. This may take some time, please be patient"
 echo "Enter the host/subnet to scan:"
-#need a target IP/hostname
+
 read -i $TARGET -e TARGET
 #How fast should we scan the target?
 #Faster speed is more likely to be detected by IDS, but is less waiting around
